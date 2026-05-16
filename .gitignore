@@ -1,6 +1,9 @@
 # Brainstorming visual-companion working files (not source)
 .superpowers/
 
+# Git worktrees (isolated implementation workspaces)
+.worktrees/
+
 # Node (tests run via `node --test`; no deps expected, but just in case)
 node_modules/
 
