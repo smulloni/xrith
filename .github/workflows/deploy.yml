@@ -1,0 +1,47 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Allow the GITHUB_TOKEN to publish a Pages deployment.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; let an in-progress run finish (don't cancel
+# a half-published deploy).
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # No build step: assemble only the runtime files so .git, tests/,
+      # and docs/ are never published.
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp -r index.html styles.css src _site/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
