@@ -74,6 +74,8 @@ export function addLayer(state) {
 export function removeLayer(state, id) {
   if (state.layers.length <= 1) return state;
   const layers = state.layers.filter(l => l.id !== id);
+  // unitLayerIndex is cosmetic-only: clamp from above. If an EARLIER layer
+  // was removed it may point at a different layer — intentional, not a remap.
   const unitLayerIndex = Math.min(state.unitLayerIndex, layers.length - 1);
   return { ...state, layers, unitLayerIndex };
 }

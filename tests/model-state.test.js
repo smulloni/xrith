@@ -32,6 +32,8 @@ test('setLayerN clamps; toggles flip flags immutably', () => {
   assert.equal(s.layers[0].n, 4, 'original unchanged');
   assert.equal(toggleMute(s, id).layers[0].muted, true);
   assert.equal(toggleSolo(s, id).layers[0].soloed, true);
+  assert.equal(s.layers[0].muted, false, 'toggleMute did not mutate input');
+  assert.equal(s.layers[0].soloed, false, 'toggleSolo did not mutate input');
 });
 
 test('setBpmForLayer sets cycleMs; setCycleMs clamps', () => {
@@ -50,6 +52,16 @@ test('audibleLayers: mute wins over solo; solo isolates', () => {
   assert.deepEqual(audibleLayers(s).map(x => x.index), [1]);
   s = toggleMute(s, s.layers[1].id);                  // 7 soloed AND muted
   assert.deepEqual(audibleLayers(s).map(x => x.index), []);
+  // all muted, no solo -> nothing audible
+  let m = createDefaultState();
+  m = toggleMute(m, m.layers[0].id);
+  m = toggleMute(m, m.layers[1].id);
+  assert.deepEqual(audibleLayers(m).map(x => x.index), []);
+  // multiple solos, none muted -> all soloed audible
+  let d = createDefaultState();
+  d = toggleSolo(d, d.layers[0].id);
+  d = toggleSolo(d, d.layers[1].id);
+  assert.deepEqual(audibleLayers(d).map(x => x.index), [0, 1]);
 });
 
 test('removeLayer keeps unitLayerIndex in range', () => {
@@ -57,6 +69,13 @@ test('removeLayer keeps unitLayerIndex in range', () => {
   s = setUnitLayerIndex(s, 1);
   s = removeLayer(s, s.layers[1].id);
   assert.equal(s.unitLayerIndex, 0);
+  // cosmetic-only drift: removing an EARLIER layer clamps from above and
+  // may point at a different layer than before — intentional.
+  let t = createDefaultState();
+  t = addLayer(t);                    // [4,7,3]
+  t = setUnitLayerIndex(t, 2);        // points at index 2
+  t = removeLayer(t, t.layers[0].id); // remove the 4 -> [7,3]
+  assert.equal(t.unitLayerIndex, 1);  // clamped to len-1 (=1), not preserved at 2
 });
 
 test('ratioText shows ratio, cycle, LCM', () => {
