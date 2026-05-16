@@ -36,5 +36,21 @@
       box.append(plain, acc);
     }
   </script>
+  <h1>Ring render probe</h1>
+  <p>Static 4-against-7 (no audio). Outer = 4 (coral), inner = 7 (blue);
+     big dots are downbeats at 12 o'clock; the white hand sweeps one cycle.</p>
+  <svg id="probe" style="width:340px;height:340px;background:#0e1320;border-radius:8px"></svg>
+  <script type="module">
+    import { createRingView } from '../src/ring-view.js';
+    import { createDefaultState } from '../src/model.js';
+    const view = createRingView(document.getElementById('probe'));
+    view.renderStructure(createDefaultState());
+    let t0 = performance.now();
+    (function loop(now) {
+      const nowSec = (now - t0) / 1000;
+      view.tick({ isRunning: true, cycleMs: 2400, nowSec, cycleStartSec: 0 });
+      requestAnimationFrame(loop);
+    })(performance.now());
+  </script>
 </body>
 </html>
