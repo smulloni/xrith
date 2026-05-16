@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>xrith manual harness</title>
+  <style>
+    body { background:#0e1320; color:#e9ecf2; font:14px system-ui; padding:20px; }
+    button { background:#1c2740; color:#e9ecf2; border:1px solid #33415c;
+             border-radius:6px; padding:12px 16px; margin:4px; min-height:44px; }
+  </style>
+</head>
+<body>
+  <h1>Voice probe</h1>
+  <p>Click <b>Unlock</b> first (audio needs a gesture), then fire each voice.
+     Each should be clearly distinct; "accent" is brighter/louder.</p>
+  <button id="unlock">Unlock audio</button>
+  <div id="voices"></div>
+  <pre id="status"></pre>
+  <script type="module">
+    import { createAudioEngine } from '../src/audio.js';
+    const eng = createAudioEngine();
+    const status = document.getElementById('status');
+    document.getElementById('unlock').onclick = async () => {
+      status.textContent = 'resume() -> ' + await eng.resume()
+        + ' (state: ' + eng.state() + ')';
+    };
+    const box = document.getElementById('voices');
+    for (let i = 0; i < 6; i++) {
+      const plain = document.createElement('button');
+      plain.textContent = `Voice ${i}`;
+      plain.onclick = () => eng.playHit(i, false, eng.now() + 0.02);
+      const acc = document.createElement('button');
+      acc.textContent = `Voice ${i} (accent)`;
+      acc.onclick = () => eng.playHit(i, true, eng.now() + 0.02);
+      box.append(plain, acc);
+    }
+  </script>
+</body>
+</html>
