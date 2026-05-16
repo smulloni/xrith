@@ -25,4 +25,12 @@ test('crossed: detects a fraction passed this frame, including wrap', () => {
   assert.equal(crossed(0.9, 0.1, 0.95), true);  // wrapped past 1.0
   assert.equal(crossed(0.9, 0.1, 0.05), true);
   assert.equal(crossed(0.9, 0.1, 0.5), false);
+  // boundary contract: half-open (prevP, curP]
+  assert.equal(crossed(0.1, 0.3, 0.1), false); // f === prevP is suppressed
+  assert.equal(crossed(0.1, 0.3, 0.3), true);  // f === curP triggers
+  assert.equal(crossed(0.9, 0.1, 0.1), true);  // wrap: f === curP triggers
+  assert.equal(crossed(0.9, 0.1, 0.9), false); // wrap: f === prevP suppressed
+  // total function: non-finite input never misfires
+  assert.equal(crossed(NaN, 0.3, 0.2), false);
+  assert.equal(crossed(0.1, NaN, 0.2), false);
 });

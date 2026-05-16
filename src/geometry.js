@@ -13,6 +13,7 @@ export function pointOnCircle(cx, cy, r, frac) {
 
 // Did fraction `f` get crossed moving from prevP to curP around a [0,1) loop?
 export function crossed(prevP, curP, f) {
+  if (!Number.isFinite(prevP) || !Number.isFinite(curP) || !Number.isFinite(f)) return false;
   if (prevP === curP) return false;
   if (prevP < curP) return f > prevP && f <= curP;
   return f > prevP || f <= curP; // wrapped through 1.0 -> 0
