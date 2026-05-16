@@ -10,6 +10,8 @@
 
 Spec: `docs/superpowers/specs/2026-05-16-cross-rhythm-explorer-design.md`.
 
+> **Test command correction:** Run the suite with `npm test` (the `test` script is `node --test`). A bare directory argument (`node --test tests/`) is NOT supported on Node ≥ 22. Wherever a task step says `Run: node --test tests/`, run `npm test` instead — including the "verify it fails" steps (the failure/error still appears, just via `npm test`).
+
 ---
 
 ## File structure
@@ -75,7 +77,7 @@ Expected: FAIL — `Cannot find module '../src/palette.js'`.
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/"
+    "test": "node --test"
   }
 }
 ```
