@@ -25,7 +25,7 @@ function flash(circle, baseR) {
 // Lane/polygon views can implement the same 3 methods later.
 export function createRingView(svg) {
   svg.setAttribute('viewBox', '0 0 1000 1000');
-  let dots = [], hand = null, lastP = 0;
+  let dots = [], hand = null, lastP = 0, wasRunning = false;
 
   function renderStructure(state) {
     while (svg.firstChild) svg.removeChild(svg.firstChild);
@@ -53,22 +53,36 @@ export function createRingView(svg) {
     });
     svg.appendChild(hand);
     lastP = 0;
+    wasRunning = false; // first tick after a rebuild resyncs without flashing
   }
 
   function tick(transport) {
     if (!hand) return;
-    let p = 0;
-    if (transport.isRunning && transport.cycleMs > 0) {
-      const elapsedMs = (transport.nowSec - transport.cycleStartSec) * 1000;
-      p = (elapsedMs / transport.cycleMs) % 1;
-      if (p < 0) p += 1;
+    if (!transport.isRunning || transport.cycleMs <= 0) {
+      // Parked: hold the hand at the downbeat. Don't run the flash pass or
+      // advance lastP — the next running frame resyncs cleanly.
+      hand.setAttribute('transform', `rotate(0 ${CX} ${CY})`);
+      wasRunning = false;
+      return;
     }
+    const elapsedMs = (transport.nowSec - transport.cycleStartSec) * 1000;
+    let p = (elapsedMs / transport.cycleMs) % 1;
+    if (p < 0) p += 1;
     hand.setAttribute('transform', `rotate(${p * 360} ${CX} ${CY})`);
-    for (const d of dots) if (crossed(lastP, p, d.frac)) flash(d.circle, d.baseR);
+    // Skip flashing on the first running frame after a park/rebuild: the hand
+    // jumps to a fresh cycle position, so stale crossings must not fire.
+    if (wasRunning) {
+      for (const d of dots) if (crossed(lastP, p, d.frac)) flash(d.circle, d.baseR);
+    }
     lastP = p;
+    wasRunning = true;
   }
 
-  function destroy() { while (svg.firstChild) svg.removeChild(svg.firstChild); }
+  function destroy() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    hand = null;
+    dots = [];
+  }
 
   return { renderStructure, tick, destroy };
 }
