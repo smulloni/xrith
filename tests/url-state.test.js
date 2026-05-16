@@ -28,12 +28,16 @@ test('empty / missing hash => default, no warning', () => {
   assert.equal(decodeState('').warning, null);
   assert.equal(decodeState('#').warning, null);
   assert.equal(decodeState(undefined).warning, null);
+  assert.equal(decodeState(null).warning, null);
+  assert.equal(decodeState('   ').warning, null);
 });
 
 test('malformed or out-of-range => default + warning', () => {
   for (const bad of ['#9;2400;0;4,7', '#1;2400;0;', '#1;abc;0;4,7',
                       '#1;2400;0;0,7', '#1;2400;0;4,7,1,2,3,4,5',
-                      '#1;2400;0;4,99', 'garbage', '#1;2400;0;4,7;extra']) {
+                      '#1;2400;0;4,99', 'garbage', '#1;2400;0;4,7;extra',
+                      '#1;2400;0;,4,7', '#1;2400;0;4,7,',
+                      '#1;2400;0;4x,7', '#1;49;0;4,7']) {
     const r = decodeState(bad);
     assert.ok(r.warning, `expected warning for ${bad}`);
     assert.deepEqual(r.state.layers.map(l => l.n), [4, 7]);
@@ -44,4 +48,12 @@ test('out-of-range unit index falls back to 0 (not a full reset)', () => {
   const r = decodeState('#1;2400;9;4,7');
   assert.equal(r.warning, null);
   assert.equal(r.state.unitLayerIndex, 0);
+});
+
+test('cycleMs boundary values 50 and 120000 are accepted', () => {
+  for (const c of [50, 120000]) {
+    const r = decodeState(`#1;${c};0;4,7`);
+    assert.equal(r.warning, null);
+    assert.equal(r.state.cycleMs, c);
+  }
 });

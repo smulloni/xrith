@@ -34,7 +34,7 @@ export function decodeState(hash) {
   if (!Number.isFinite(cycleMs) ||
       cycleMs < CYCLE_MS_MIN || cycleMs > CYCLE_MS_MAX) return fallback();
 
-  const entries = ls.split(',').filter(Boolean);
+  const entries = ls === '' ? [] : ls.split(',');
   if (entries.length < 1 || entries.length > MAX_LAYERS) return fallback();
 
   const layers = [];
