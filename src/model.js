@@ -3,7 +3,7 @@ import { MAX_LAYERS } from './palette.js';
 export const N_MIN = 1, N_MAX = 32;
 export const BPM_MIN = 20, BPM_MAX = 300;
 export const CYCLE_MS_MIN = 50, CYCLE_MS_MAX = 120000;
-const DEFAULT_BPM = 100;
+const DEFAULT_BPM = 60;
 
 let _idSeq = 0;
 function newId() { return 'L' + (++_idSeq); }
@@ -47,7 +47,7 @@ export function createDefaultState() {
   const layers = [makeLayer(4), makeLayer(7)];
   return {
     layers,
-    cycleMs: bpmToCycleMs(DEFAULT_BPM, layers[0].n), // 2400
+    cycleMs: bpmToCycleMs(DEFAULT_BPM, layers[0].n), // 4000
     isPlaying: false,
     // Cosmetic ONLY: which layer's BPM the tempo UI displays.
     // Never read by scheduler/audio/ring-view.

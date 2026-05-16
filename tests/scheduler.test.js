@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { hitsInWindow } from '../src/scheduler.js';
 import { createDefaultState, toggleMute, toggleSolo } from '../src/model.js';
 
-// default: [4,7], cycleMs 2400 => cycleSec 2.4
+// default: [4,7], cycleMs 4000 => cycleSec 4.0
 test('first window from t=0 yields both downbeats (accented) at 0', () => {
   const s = createDefaultState();
   const hits = hitsInWindow(s, 0, 0, 0.05);
@@ -19,11 +19,11 @@ test('voiceIndex is the FULL-array index, stable under mute/solo', () => {
 });
 
 test('cycle wrap: window spanning the boundary includes next cycle downbeat', () => {
-  const s = createDefaultState();              // cycleSec = 2.4
-  const hits = hitsInWindow(s, 0, 2.39, 2.45);
-  const at24 = hits.filter(h => Math.abs(h.timeSec - 2.4) < 1e-9);
-  assert.equal(at24.length, 2);
-  assert.ok(at24.every(h => h.accent));
+  const s = createDefaultState();              // cycleSec = 4.0
+  const hits = hitsInWindow(s, 0, 3.99, 4.05);
+  const at40 = hits.filter(h => Math.abs(h.timeSec - 4.0) < 1e-9);
+  assert.equal(at40.length, 2);
+  assert.ok(at40.every(h => h.accent));
 });
 
 test('no audible layers => empty', () => {
@@ -35,15 +35,15 @@ test('no audible layers => empty', () => {
 
 test('half-open window [from,to): includes from, excludes to', () => {
   const s = createDefaultState();
-  assert.equal(hitsInWindow(s, 0, 0.6, 0.7).some(h => Math.abs(h.timeSec - 0.6) < 1e-9), true);
-  assert.equal(hitsInWindow(s, 0, 0.5, 0.6).some(h => Math.abs(h.timeSec - 0.6) < 1e-9), false);
+  assert.equal(hitsInWindow(s, 0, 1.0, 1.1).some(h => Math.abs(h.timeSec - 1.0) < 1e-9), true);
+  assert.equal(hitsInWindow(s, 0, 0.9, 1.0).some(h => Math.abs(h.timeSec - 1.0) < 1e-9), false);
 });
 
 test('adjacent windows: a hit on the boundary is scheduled exactly once', () => {
-  const s = createDefaultState();           // layer 0 (n=4) has a hit at 0.6s
-  const a = hitsInWindow(s, 0, 0, 0.6);     // window A
-  const b = hitsInWindow(s, 0, 0.6, 1.2);   // window B (adjacent, no gap/overlap)
+  const s = createDefaultState();           // layer 0 (n=4) has a hit at 1.0s
+  const a = hitsInWindow(s, 0, 0, 1.0);     // window A
+  const b = hitsInWindow(s, 0, 1.0, 2.0);   // window B (adjacent, no gap/overlap)
   const boundary = [...a, ...b]
-    .filter(h => Math.abs(h.timeSec - 0.6) < 1e-9);
+    .filter(h => Math.abs(h.timeSec - 1.0) < 1e-9);
   assert.equal(boundary.length, 1);         // exactly once (in B, never A)
 });

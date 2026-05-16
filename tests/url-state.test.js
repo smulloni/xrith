@@ -9,7 +9,7 @@ const shape = s => ({
 });
 
 test('encode default => stable string', () => {
-  assert.equal(encodeState(createDefaultState()), '#1;2400;0;4,7');
+  assert.equal(encodeState(createDefaultState()), '#1;4000;0;4,7');
 });
 
 test('round-trip preserves rhythm, flags, unit; never autoplays', () => {

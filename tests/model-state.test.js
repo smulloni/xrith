@@ -6,10 +6,10 @@ import {
   setUnitLayerIndex, setPlaying, audibleLayers, ratioText,
 } from '../src/model.js';
 
-test('default state: 4 and 7, cycleMs 2400 (100bpm per 4), not playing', () => {
+test('default state: 4 and 7, cycleMs 4000 (60bpm per 4), not playing', () => {
   const s = createDefaultState();
   assert.deepEqual(s.layers.map(l => l.n), [4, 7]);
-  assert.equal(s.cycleMs, 2400);
+  assert.equal(s.cycleMs, 4000);
   assert.equal(s.isPlaying, false);
   assert.equal(s.unitLayerIndex, 0);
 });
@@ -80,7 +80,7 @@ test('removeLayer keeps unitLayerIndex in range', () => {
 
 test('ratioText shows ratio, cycle, LCM', () => {
   assert.equal(ratioText(createDefaultState()),
-    '4 : 7 · cycle 2400 ms · grid LCM 28');
+    '4 : 7 · cycle 4000 ms · grid LCM 28');
 });
 
 test('setPlaying toggles the flag only', () => {

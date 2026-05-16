@@ -53,7 +53,7 @@ test('getTransport reports clock + cycleMs + running', () => {
   s.start(); f.advance(0.3);
   const t = s.getTransport();
   assert.equal(t.nowSec, 0.3);
-  assert.equal(t.cycleMs, 2400);
+  assert.equal(t.cycleMs, 4000);
   assert.equal(t.isRunning, true);
 });
 
@@ -63,9 +63,9 @@ test('steady ticks (no stall): each hit scheduled exactly once across windows', 
   s.start();                                   // tick @ now=0 -> window [0, 0.12)
   // advance in steps < LOOKAHEAD_SEC so successive windows stay contiguous
   // (from === previous to): no gap, no overlap, no stall.
-  for (let i = 0; i < 30; i++) { f.advance(0.025); f.fire(); } // now -> 0.75s
+  for (let i = 0; i < 48; i++) { f.advance(0.025); f.fire(); } // now -> 1.2s
   const at = (t) => f.played.filter(h => Math.abs(h.t - t) < 1e-6).length;
   assert.equal(at(0), 2, 'both downbeats scheduled exactly once (only tick 1)');
-  assert.equal(at(0.6), 1, 'layer0 hit at 0.6s scheduled exactly once');
-  assert.equal(at(2.4 / 7), 1, 'layer1 first off-beat scheduled exactly once');
+  assert.equal(at(1.0), 1, 'layer0 hit at 1.0s scheduled exactly once');
+  assert.equal(at(4 / 7), 1, 'layer1 first off-beat scheduled exactly once');
 });
