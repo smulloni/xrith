@@ -26,8 +26,10 @@ that growth (see §10).
 - Concentric-ring visualization with an audio-clock-locked playhead.
 - Per-layer mute/solo, tap tempo, and a shareable URL.
 - Honest model: no control may masquerade as a musical transformation.
+- Responsive: a single layout that works well on phones (touch targets, stacked)
+  and desktop alike.
 
-**Non-goals (v1)** — see §9 for the full list. No step sequencer, no sample
+**Non-goals (v1)** — see §10 for the full list. No step sequencer, no sample
 voices, no per-layer volume/pitch UI, no alternative visualizations shipped, no
 polymeter.
 
@@ -133,6 +135,21 @@ column on the right, top to bottom:
 The layer list is vertical specifically to absorb future per-row control growth
 (volume/pitch/voice) without a redesign.
 
+**Responsive behavior (one layout, two arrangements via CSS):**
+
+- **Wide (≥ ~860 px):** rings + right control column side by side, as above.
+- **Narrow (< ~860 px, phones/portrait):** the same regions stack — rings on
+  top (full width, SVG scales by `viewBox`, capped `max-width`), then the
+  ratio readout, then the control column as a full-width section below;
+  the page scrolls if needed. The already-vertical layer list needs no change.
+- **Touch:** all interactive targets ≥ 44 px; `+`/`−` steppers (not tiny
+  spinners) and chunky M/S/× toggles are finger-friendly; the unit picker is a
+  native `<select>` (native mobile picker). `touch-action: manipulation` on
+  controls to kill double-tap zoom; tap-tempo and transport use Pointer Events
+  for low latency. Viewport meta `width=device-width, initial-scale=1`.
+- Both portrait and landscape supported; the breakpoint (not orientation)
+  decides the arrangement. Layout B is not built (A responsive covers both).
+
 ## 8. Edge cases & error handling (no silent failures)
 
 | Case | Behavior |
@@ -146,6 +163,9 @@ The layer list is vertical specifically to absorb future per-row control growth
 | Background-tab throttling | Large lookahead window mitigates; documented known limitation. Post-MVP fix (Worker/AudioWorklet clock) isolated to `scheduler.js`. |
 | Float drift over long runs | Never sum intervals; compute `cycleStart + (k/n)·cycleMs`, advancing `cycleStart` by exact `cycleMs` off the audio clock. |
 | Rapid edits | Each edit restarts the cycle; URL write debounced ~300 ms via `history.replaceState`. |
+| iOS audio unlock | `AudioContext` must be created/resumed **inside** the first touch-gesture handler; also play one short silent buffer on that gesture to fully unlock older iOS. |
+| Mobile interruption | A call/app-switch can suspend the context; on `visibilitychange`/focus return, re-`resume()` if `isPlaying`, else show the unlock banner. |
+| Small viewport | Below ~860 px the layout stacks (rings → readout → controls); never horizontal-scrolls; ring SVG capped by `max-width` so it can't dwarf the controls. |
 
 ## 9. Testing
 
@@ -162,14 +182,16 @@ The layer list is vertical specifically to absorb future per-row control growth
 - **Audio + ring-view:** manual checklist + a tiny `tests/manual.html` harness
   (fire each voice; render a known pattern). Not auto-tested — Web Audio/SVG is
   integration territory, not worth a headless rig for MVP.
+- **Responsive/mobile:** manual check — layout stacks below the ~860 px
+  breakpoint with no horizontal scroll; touch targets ≥ 44 px; iOS unlocks
+  audio on the first tap; both orientations usable.
 - Tests live in `tests/`, run via `node --test`.
 
 ## 10. Out of scope (YAGNI) and future seams
 
 Deferred: step sequencer / per-step on-off / extra accents / swing · sample
 voices · per-layer volume/pitch/voice UI · lane & polygon visualizations ·
-presets/accounts/export/MIDI · polymeter (independent per-layer cycles) ·
-mobile-tuned layout.
+presets/accounts/export/MIDI · polymeter (independent per-layer cycles).
 
 Each maps to an existing seam, so growth is additive, not a rewrite:
 
@@ -183,4 +205,5 @@ Each maps to an existing seam, so growth is additive, not a rewrite:
 - Brainstorming UI mockups are preserved under
   `.superpowers/brainstorm/` (rings, layout A/B). Add `.superpowers/` to
   `.gitignore`.
-- Desktop-first; must not break on mobile but is not tuned for it.
+- Responsive and mobile-supported (see §7): one codebase, CSS-driven
+  arrangement, touch-first controls, iOS audio-unlock handling.
