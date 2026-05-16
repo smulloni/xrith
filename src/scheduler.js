@@ -35,3 +35,53 @@ export function hitsInWindow(state, cycleStartSec, fromSec, toSec) {
   hits.sort((a, b) => a.timeSec - b.timeSec);
   return hits;
 }
+
+export function createScheduler({
+  getState, audio,
+  setInterval: si = setInterval, clearInterval: ci = clearInterval,
+}) {
+  let timer = null, cycleStartSec = 0, scheduledUntilSec = 0, running = false;
+
+  function tick() {
+    const now = audio.now();
+    const to = now + LOOKAHEAD_SEC;
+    const from = Math.max(scheduledUntilSec, now);
+    if (to > from) {
+      for (const h of hitsInWindow(getState(), cycleStartSec, from, to)) {
+        audio.playHit(h.voiceIndex, h.accent, h.timeSec);
+      }
+      scheduledUntilSec = to;
+    }
+  }
+
+  return {
+    start() {
+      if (running) return;
+      running = true;
+      cycleStartSec = audio.now();
+      scheduledUntilSec = cycleStartSec;
+      tick();
+      timer = si(tick, TICK_MS);
+    },
+    stop() {
+      running = false;
+      if (timer !== null) { ci(timer); timer = null; }
+    },
+    // Spec: any live edit restarts the current cycle from its downbeat.
+    reconfigure() {
+      if (!running) return;
+      cycleStartSec = audio.now();
+      scheduledUntilSec = cycleStartSec;
+      tick();
+    },
+    getTransport() {
+      return {
+        nowSec: audio.now(),
+        cycleStartSec,
+        cycleMs: getState().cycleMs,
+        isRunning: running,
+      };
+    },
+    isRunning() { return running; },
+  };
+}
