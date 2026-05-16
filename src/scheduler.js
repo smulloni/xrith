@@ -45,6 +45,9 @@ export function createScheduler({
   function tick() {
     const now = audio.now();
     const to = now + LOOKAHEAD_SEC;
+    // If a tick is delayed past scheduledUntilSec (e.g. background-tab
+    // throttling), the skipped gap is NOT caught up — a metronome should
+    // resync, not fire a catch-up burst (documented known limitation).
     const from = Math.max(scheduledUntilSec, now);
     if (to > from) {
       for (const h of hitsInWindow(getState(), cycleStartSec, from, to)) {
