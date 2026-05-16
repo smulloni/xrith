@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   hitTimes, bpmToCycleMs, cycleMsToBpm, lcm, lcmAll,
   clampN, clampBpm, clampCycleMs,
-  N_MIN, N_MAX, BPM_MIN, BPM_MAX,
+  N_MIN, N_MAX, BPM_MIN, BPM_MAX, CYCLE_MS_MIN, CYCLE_MS_MAX,
 } from '../src/model.js';
 
 const near = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} ~ ${b}`);
@@ -36,6 +36,8 @@ test('clamps coerce and bound', () => {
   assert.equal(clampN('x'), N_MIN);
   assert.equal(clampBpm(5), BPM_MIN);
   assert.equal(clampBpm(9999), BPM_MAX);
-  assert.equal(clampCycleMs(-1), 50);
-  assert.equal(clampCycleMs(1e9), 120000);
+  assert.equal(clampBpm('x'), BPM_MIN);
+  assert.equal(clampCycleMs(-1), CYCLE_MS_MIN);
+  assert.equal(clampCycleMs(1e9), CYCLE_MS_MAX);
+  assert.equal(clampCycleMs(NaN), CYCLE_MS_MIN);
 });
