@@ -41,7 +41,10 @@ Single source of truth, privileging no layer:
 state = {
   layers: [ { id, n, muted, soloed } ],   // 1..6 layers; n = integer subdivision
   cycleMs,                                  // the ONLY tempo quantity
-  isPlaying
+  isPlaying,
+  unitLayerIndex                            // cosmetic ONLY: which layer the
+                                            // BPM readout is expressed per;
+                                            // never read by scheduler/audio/view
 }
 ```
 
