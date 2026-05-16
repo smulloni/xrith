@@ -84,6 +84,7 @@ view.renderStructure(state);
 if (decoded.warning) controls.showBanner(decoded.warning, 5000);
 
 // Render loop locked to the audio clock via the scheduler transport.
+// Intentionally unbounded — single page, single lifetime (never cancelled).
 (function frame() {
   view.tick(scheduler.getTransport());
   requestAnimationFrame(frame);
@@ -94,6 +95,12 @@ document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible' && state.isPlaying
       && audio.state() !== 'running') {
     const ok = await audio.resume();
-    if (!ok) controls.showBanner('Audio interrupted — tap Play to resume.', 4000);
+    if (!ok) {
+      // Audio could not be revived — make the UI honest: stop and reflect it
+      // so the next Play press actually starts (not a confusing Stop→Play).
+      scheduler.stop();
+      dispatch(setPlaying(state, false));
+      controls.showBanner('Audio interrupted — tap Play to resume.', 4000);
+    }
   }
 });

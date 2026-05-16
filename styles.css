@@ -21,7 +21,7 @@ body { background: var(--bg); color: var(--fg);
              flex-wrap:wrap; }
 .bpm { width:64px; background:var(--bg); color:var(--fg);
        border:1px solid var(--line); border-radius:5px; padding:8px;
-       font-size:15px; text-align:center; }
+       font-size:15px; text-align:center; min-height:44px; }
 .unit { background:var(--bg); color:var(--fg); border:1px solid var(--line);
         border-radius:5px; padding:8px; min-height:44px; }
 .muted { color:var(--muted); font-size:13px; }
