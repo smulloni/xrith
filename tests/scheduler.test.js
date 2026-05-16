@@ -38,3 +38,12 @@ test('half-open window [from,to): includes from, excludes to', () => {
   assert.equal(hitsInWindow(s, 0, 0.6, 0.7).some(h => Math.abs(h.timeSec - 0.6) < 1e-9), true);
   assert.equal(hitsInWindow(s, 0, 0.5, 0.6).some(h => Math.abs(h.timeSec - 0.6) < 1e-9), false);
 });
+
+test('adjacent windows: a hit on the boundary is scheduled exactly once', () => {
+  const s = createDefaultState();           // layer 0 (n=4) has a hit at 0.6s
+  const a = hitsInWindow(s, 0, 0, 0.6);     // window A
+  const b = hitsInWindow(s, 0, 0.6, 1.2);   // window B (adjacent, no gap/overlap)
+  const boundary = [...a, ...b]
+    .filter(h => Math.abs(h.timeSec - 0.6) < 1e-9);
+  assert.equal(boundary.length, 1);         // exactly once (in B, never A)
+});

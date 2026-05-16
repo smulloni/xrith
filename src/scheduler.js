@@ -9,8 +9,13 @@ export const TICK_MS = 25;
 export function hitsInWindow(state, cycleStartSec, fromSec, toSec) {
   const hits = [];
   const cycleSec = state.cycleMs / 1000;
+  // cycleMs is clamped >= 50 by the model; this guard also keeps the function
+  // total for synthetic/degenerate state (NaN comparisons -> empty result).
   if (cycleSec <= 0 || toSec <= fromSec) return hits;
 
+  // Callers (the lookahead loop) pass fromSec >= cycleStartSec by construction.
+  // A window before cycleStart yields negative cycle indices whose hits are
+  // correctly filtered out by the [fromSec, toSec) test below (not optimized).
   const firstCycle = Math.floor((fromSec - cycleStartSec) / cycleSec);
   const lastCycle = Math.floor((toSec - cycleStartSec) / cycleSec);
 
@@ -26,6 +31,7 @@ export function hitsInWindow(state, cycleStartSec, fromSec, toSec) {
       }
     }
   }
+  // Stable sort (V8 / Node >= 11) preserves layer order for simultaneous hits.
   hits.sort((a, b) => a.timeSec - b.timeSec);
   return hits;
 }
