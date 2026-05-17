@@ -36,15 +36,36 @@
       box.append(plain, acc);
     }
   </script>
-  <h1>Ring render probe</h1>
-  <p>Static 4-against-7 (no audio). Outer = 4 (coral), inner = 7 (blue);
-     big dots are downbeats at 12 o'clock; the white hand sweeps one cycle.</p>
+  <h1>Ring render / per-event mute probe</h1>
+  <p>4-against-7 (no audio). Verify:</p>
+  <ol>
+    <li>Click any dot → it turns <b>gray</b> (individually muted); click again → restored.</li>
+    <li>Muted dots do <b>not</b> flash as the hand passes; colored dots do.</li>
+    <li><b>Mute outer</b> → layer-4 dots become <b>hollow</b> (outline only), none flash.</li>
+    <li>A dot you grayed stays distinguishable under a layer mute (hollow + gray).</li>
+    <li><b>Solo inner</b> → outer becomes hollow too (solo-exclusion = layer silenced).</li>
+    <li>Tap a small dot near its edge — the ~44px hit area still toggles it.</li>
+  </ol>
+  <button id="mMute">Toggle Mute outer (M)</button>
+  <button id="mSolo">Toggle Solo inner (S)</button>
   <svg id="probe" style="width:340px;height:340px;background:#0e1320;border-radius:8px"></svg>
   <script type="module">
     import { createRingView } from '../src/ring-view.js';
-    import { createDefaultState } from '../src/model.js';
-    const view = createRingView(document.getElementById('probe'));
-    view.renderStructure(createDefaultState());
+    import { createDefaultState, toggleStepMute, toggleMute, toggleSolo }
+      from '../src/model.js';
+    let st = createDefaultState();
+    const view = createRingView(document.getElementById('probe'), (id, k) => {
+      st = toggleStepMute(st, id, k);
+      view.renderStructure(st);
+    });
+    const rerender = () => view.renderStructure(st);
+    document.getElementById('mMute').onclick = () => {
+      st = toggleMute(st, st.layers[0].id); rerender();
+    };
+    document.getElementById('mSolo').onclick = () => {
+      st = toggleSolo(st, st.layers[1].id); rerender();
+    };
+    rerender();
     let t0 = performance.now();
     (function loop(now) {
       const nowSec = (now - t0) / 1000;
