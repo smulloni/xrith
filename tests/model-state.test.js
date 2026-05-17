@@ -4,6 +4,7 @@ import {
   createDefaultState, addLayer, removeLayer, setLayerN,
   toggleMute, toggleSolo, setCycleMs, setBpmForLayer,
   setUnitLayerIndex, setPlaying, audibleLayers, ratioText,
+  toggleStepMute, isStepMuted, makeLayer,
 } from '../src/model.js';
 
 test('default state: 4 and 7, cycleMs 4000 (60bpm per 4), not playing', () => {
@@ -85,4 +86,50 @@ test('ratioText shows ratio, cycle, LCM', () => {
 
 test('setPlaying toggles the flag only', () => {
   assert.equal(setPlaying(createDefaultState(), true).isPlaying, true);
+});
+
+test('makeLayer / default state seed mutedSteps as empty array', () => {
+  assert.deepEqual(makeLayer(5).mutedSteps, []);
+  for (const l of createDefaultState().layers) assert.deepEqual(l.mutedSteps, []);
+});
+
+test('toggleStepMute adds, removes, stays sorted/unique, immutably', () => {
+  const s = createDefaultState();
+  const id = s.layers[1].id;                 // the n=7 layer
+  const a = toggleStepMute(s, id, 3);
+  assert.deepEqual(a.layers[1].mutedSteps, [3]);
+  const b = toggleStepMute(toggleStepMute(a, id, 1), id, 5);
+  assert.deepEqual(b.layers[1].mutedSteps, [1, 3, 5], 'kept sorted');
+  const c = toggleStepMute(b, id, 3);        // toggle 3 back off
+  assert.deepEqual(c.layers[1].mutedSteps, [1, 5]);
+  assert.deepEqual(s.layers[1].mutedSteps, [], 'input never mutated');
+  assert.deepEqual(a.layers[0].mutedSteps, [], 'other layers untouched');
+});
+
+test('toggleStepMute ignores out-of-range k (k<0 or k>=n)', () => {
+  const s = createDefaultState();
+  const id = s.layers[0].id;                 // n=4 -> valid k: 0..3
+  assert.deepEqual(toggleStepMute(s, id, 4).layers[0].mutedSteps, []);
+  assert.deepEqual(toggleStepMute(s, id, -1).layers[0].mutedSteps, []);
+  assert.deepEqual(toggleStepMute(s, id, 0).layers[0].mutedSteps, [0]);
+});
+
+test('setLayerN forgets mutes on shrink, keeps them on grow', () => {
+  let s = createDefaultState();
+  const id = s.layers[1].id;                 // n=7
+  s = toggleStepMute(s, id, 1);
+  s = toggleStepMute(s, id, 5);              // mutedSteps [1,5]
+  const shrunk = setLayerN(s, id, 4);        // 5 is now out of range
+  assert.equal(shrunk.layers[1].n, 4);
+  assert.deepEqual(shrunk.layers[1].mutedSteps, [1], 'dropped 5');
+  const grown = setLayerN(shrunk, id, 9);    // grow back: no resurrection
+  assert.deepEqual(grown.layers[1].mutedSteps, [1]);
+  assert.deepEqual(s.layers[0].mutedSteps, [], 'other layer untouched');
+});
+
+test('isStepMuted reports membership', () => {
+  let t = createDefaultState();
+  t = toggleStepMute(t, t.layers[0].id, 2);   // mute k=2 on layer 0
+  assert.equal(isStepMuted(t.layers[0], 2), true);
+  assert.equal(isStepMuted(t.layers[0], 0), false);
 });

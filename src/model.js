@@ -40,7 +40,7 @@ export function lcmAll(ns) { return ns.reduce((acc, n) => lcm(acc, n), 1); }
 export { MAX_LAYERS, newId };
 
 export function makeLayer(n) {
-  return { id: newId(), n: clampN(n), muted: false, soloed: false };
+  return { id: newId(), n: clampN(n), muted: false, soloed: false, mutedSteps: [] };
 }
 
 export function createDefaultState() {
@@ -80,8 +80,11 @@ export function removeLayer(state, id) {
   return { ...state, layers, unitLayerIndex };
 }
 export function setLayerN(state, id, n) {
-  return withLayers(state, state.layers.map(
-    l => (l.id === id ? { ...l, n: clampN(n) } : l)));
+  return withLayers(state, state.layers.map((l) => {
+    if (l.id !== id) return l;
+    const cn = clampN(n);
+    return { ...l, n: cn, mutedSteps: l.mutedSteps.filter((k) => k < cn) };
+  }));
 }
 export function toggleMute(state, id) {
   return withLayers(state, state.layers.map(
@@ -90,6 +93,18 @@ export function toggleMute(state, id) {
 export function toggleSolo(state, id) {
   return withLayers(state, state.layers.map(
     l => (l.id === id ? { ...l, soloed: !l.soloed } : l)));
+}
+export function isStepMuted(layer, k) {
+  return layer.mutedSteps.includes(k);
+}
+export function toggleStepMute(state, id, k) {
+  return withLayers(state, state.layers.map((l) => {
+    if (l.id !== id || k < 0 || k >= l.n) return l;
+    const mutedSteps = l.mutedSteps.includes(k)
+      ? l.mutedSteps.filter((x) => x !== k)
+      : [...l.mutedSteps, k].sort((a, b) => a - b);
+    return { ...l, mutedSteps };
+  }));
 }
 export function setCycleMs(state, ms) {
   return { ...state, cycleMs: clampCycleMs(ms) };
