@@ -5,12 +5,20 @@ import {
 import { MAX_LAYERS } from './palette.js';
 
 const VERSION = 1;
-const LAYER_RE = /^(\d+)(m?)(s?)$/;
+const LAYER_RE = /^(\d+)(m?)(s?)(?:\.(\d+(?:\.\d+)*))?$/;
 
-// #<v>;<cycleMs>;<unitIdx>;<n[ms],n[ms],...>   flags: m=muted s=soloed
+// #<v>;<cycleMs>;<unitIdx>;<n[ms][.i.j…],n[ms][.i.j…],…>
+// flags: m=muted s=soloed; optional .i.j.k = individually muted step
+// indices (sorted ascending). Absent suffix => no per-event mutes (v1
+// links predate the feature and decode identically).
 export function encodeState(state) {
   const layers = state.layers
-    .map(l => `${l.n}${l.muted ? 'm' : ''}${l.soloed ? 's' : ''}`)
+    .map((l) => {
+      const steps = l.mutedSteps.length
+        ? '.' + [...l.mutedSteps].sort((a, b) => a - b).join('.')
+        : '';
+      return `${l.n}${l.muted ? 'm' : ''}${l.soloed ? 's' : ''}${steps}`;
+    })
     .join(',');
   return `#${VERSION};${Math.round(state.cycleMs)};${state.unitLayerIndex};${layers}`;
 }
@@ -46,6 +54,15 @@ export function decodeState(hash) {
     const layer = makeLayer(n);
     layer.muted = m[2] === 'm';
     layer.soloed = m[3] === 's';
+    if (m[4] !== undefined) {
+      const idxs = m[4].split('.').map(Number);
+      const seen = new Set();
+      for (const k of idxs) {
+        if (k < 0 || k >= n || seen.has(k)) return fallback();
+        seen.add(k);
+      }
+      layer.mutedSteps = idxs.sort((a, b) => a - b);
+    }
     layers.push(layer);
   }
 

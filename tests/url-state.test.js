@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { encodeState, decodeState } from '../src/url-state.js';
-import { createDefaultState, toggleSolo, toggleMute } from '../src/model.js';
+import { createDefaultState, toggleSolo, toggleMute, toggleStepMute } from '../src/model.js';
 
 const shape = s => ({
   layers: s.layers.map(l => ({ n: l.n, muted: l.muted, soloed: l.soloed })),
@@ -55,5 +55,48 @@ test('cycleMs boundary values 50 and 120000 are accepted', () => {
     const r = decodeState(`#1;${c};0;4,7`);
     assert.equal(r.warning, null);
     assert.equal(r.state.cycleMs, c);
+  }
+});
+
+test('encode: no suffix when no muted steps (byte-identical legacy)', () => {
+  assert.equal(encodeState(createDefaultState()), '#1;4000;0;4,7');
+});
+
+test('encode: muted steps as a sorted dot-list suffix', () => {
+  let s = createDefaultState();
+  s = toggleStepMute(s, s.layers[1].id, 5);
+  s = toggleStepMute(s, s.layers[1].id, 1);   // layer 1 (n7): steps {1,5}
+  s = toggleSolo(s, s.layers[1].id);
+  assert.equal(encodeState(s), '#1;4000;0;4,7s.1.5');
+});
+
+test('round-trip preserves muted steps', () => {
+  let s = createDefaultState();
+  s = toggleStepMute(s, s.layers[0].id, 2);
+  s = toggleStepMute(s, s.layers[1].id, 0);
+  s = toggleStepMute(s, s.layers[1].id, 6);
+  const { state, warning } = decodeState(encodeState(s));
+  assert.equal(warning, null);
+  assert.deepEqual(state.layers.map(l => l.mutedSteps), [[2], [0, 6]]);
+});
+
+test('legacy v1 link without suffix decodes mutedSteps as []', () => {
+  const r = decodeState('#1;4000;0;4m,7s');
+  assert.equal(r.warning, null);
+  assert.deepEqual(r.state.layers.map(l => l.mutedSteps), [[], []]);
+});
+
+test('malformed muted-step suffix => default + warning', () => {
+  for (const bad of [
+    '#1;4000;0;4.9,7',     // index 9 >= n=4
+    '#1;4000;0;4,7.1.1',   // duplicate index
+    '#1;4000;0;4.,7',      // empty list (regex reject)
+    '#1;4000;0;4.x,7',     // non-numeric (regex reject)
+    '#1;4000;0;4..1,7',    // malformed dots (regex reject)
+    '#1;4000;0;4.0.,7',    // trailing dot (regex reject)
+  ]) {
+    const r = decodeState(bad);
+    assert.ok(r.warning, `expected warning for ${bad}`);
+    assert.deepEqual(r.state.layers.map(l => l.n), [4, 7]);
   }
 });
