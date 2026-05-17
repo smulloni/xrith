@@ -39,7 +39,9 @@ Single source of truth, privileging no layer:
 
 ```
 state = {
-  layers: [ { id, n, muted, soloed } ],   // 1..6 layers; n = integer subdivision
+  layers: [ { id, n, muted, soloed, mutedSteps } ], // 1..6; n = subdivision;
+                                            // mutedSteps = sorted int[] of
+                                            // individually-muted event indices
   cycleMs,                                  // the ONLY tempo quantity
   isPlaying,
   unitLayerIndex                            // cosmetic ONLY: which layer the
@@ -118,7 +120,11 @@ Each ring: a faint guide circle + `n` dots at angles `−90° + k·(360/n)`
 **playhead hand** rotates by `((now − cycleStart) / cycleMs) · 360°`, derived
 from `audioContext.currentTime` (never `Date.now()`). When the hand crosses a
 dot, that dot **flashes** (~150 ms pulse) — visual confirmation locked to the
-click. Only this view ships in v1, behind the `Visualization` interface so
+click. Each dot has four states (filled/hollow × layer-color/gray): a dot is
+**gray** when individually muted (click to toggle) and **hollow** when its
+layer is silenced (M, or solo-exclusion); only filled, layer-colored dots
+sound, and only they flash. Only this view ships in v1, behind the
+`Visualization` interface so
 lanes/polygons become a toggle later.
 
 ## 7. UI layout (Layout A)
@@ -192,7 +198,10 @@ The layer list is vertical specifically to absorb future per-row control growth
 
 ## 10. Out of scope (YAGNI) and future seams
 
-Deferred: step sequencer / per-step on-off / extra accents / swing · sample
+Implemented post-v1: per-event mute (click a dot to silence one event;
+see `2026-05-17-event-mute-design.md`).
+
+Deferred: step sequencer / per-step *insert* / extra accents / swing · sample
 voices · per-layer volume/pitch/voice UI · lane & polygon visualizations ·
 presets/accounts/export/MIDI · polymeter (independent per-layer cycles).
 
