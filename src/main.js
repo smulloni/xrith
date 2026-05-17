@@ -1,6 +1,6 @@
 import {
   setLayerN, addLayer, removeLayer, toggleMute, toggleSolo,
-  setBpmForLayer, setUnitLayerIndex, setPlaying,
+  setBpmForLayer, setUnitLayerIndex, setPlaying, toggleStepMute,
 } from './model.js';
 import { decodeState, encodeState } from './url-state.js';
 import { createAudioEngine } from './audio.js';
@@ -13,7 +13,8 @@ let state = decoded.state;
 
 const audio = createAudioEngine();
 const scheduler = createScheduler({ getState: () => state, audio });
-const view = createRingView(document.getElementById('rings'));
+const view = createRingView(document.getElementById('rings'),
+  (layerId, k) => dispatch(toggleStepMute(state, layerId, k)));
 
 let urlTimer = null;
 function writeUrl() {

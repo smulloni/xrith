@@ -1,8 +1,10 @@
 import { PALETTE } from './palette.js';
+import { audibleLayers, isStepMuted } from './model.js';
 import { ringRadius, pointOnCircle, crossed } from './geometry.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const CX = 500, CY = 500;
+const MUTED_COLOR = '#6b7794';   // gray = this event is individually muted
 
 function el(name, attrs) {
   const e = document.createElementNS(SVGNS, name);
@@ -23,7 +25,7 @@ function flash(circle, baseR) {
 // Implements the Visualization interface:
 //   renderStructure(state), tick(transport), destroy()
 // Lane/polygon views can implement the same 3 methods later.
-export function createRingView(svg) {
+export function createRingView(svg, onToggleEvent = () => {}) {
   svg.setAttribute('viewBox', '0 0 1000 1000');
   let dots = [], hand = null, lastP = 0, wasRunning = false;
 
@@ -31,6 +33,7 @@ export function createRingView(svg) {
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     dots = [];
     const L = state.layers.length;
+    const audible = new Set(audibleLayers(state).map((a) => a.index));
     state.layers.forEach((layer, i) => {
       const r = ringRadius(i, L);
       svg.appendChild(el('circle', {
@@ -38,18 +41,39 @@ export function createRingView(svg) {
         stroke: '#33415c', 'stroke-width': 2,
       }));
       const color = PALETTE[i % PALETTE.length].color;
+      const layerSilenced = !audible.has(i);
       for (let k = 0; k < layer.n; k++) {
         const frac = k / layer.n;
         const p = pointOnCircle(CX, CY, r, frac);
         const baseR = k === 0 ? 22 : 14;
-        const c = el('circle', { cx: p.x, cy: p.y, r: baseR, fill: color });
+        const eventMuted = isStepMuted(layer, k);
+        const tone = eventMuted ? MUTED_COLOR : color;
+        const attrs = { cx: p.x, cy: p.y, r: baseR, 'pointer-events': 'none' };
+        if (layerSilenced) {
+          attrs.fill = 'none';
+          attrs.stroke = tone;
+          attrs['stroke-width'] = k === 0 ? 3 : 2;
+        } else {
+          attrs.fill = tone;
+        }
+        const c = el('circle', attrs);
         svg.appendChild(c);
-        dots.push({ circle: c, frac, baseR });
+        // Transparent >=44px touch target on top; carries the toggle.
+        const hit = el('circle', {
+          cx: p.x, cy: p.y, r: Math.max(baseR, 22),
+          fill: 'transparent', 'pointer-events': 'all', cursor: 'pointer',
+        });
+        const layerId = layer.id, step = k;
+        hit.addEventListener('click', () => onToggleEvent(layerId, step));
+        svg.appendChild(hit);
+        // Audio<->visual honesty: only events that will sound flash.
+        if (!layerSilenced && !eventMuted) dots.push({ circle: c, frac, baseR });
       }
     });
     hand = el('line', {
       x1: CX, y1: CY, x2: CX, y2: 40,
       stroke: '#f1f3f8', 'stroke-width': 5, 'stroke-linecap': 'round',
+      'pointer-events': 'none', // never absorb clicks meant for a dot below
     });
     svg.appendChild(hand);
     lastP = 0;
