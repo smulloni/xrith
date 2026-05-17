@@ -1,4 +1,4 @@
-import { audibleLayers } from './model.js';
+import { audibleLayers, isStepMuted } from './model.js';
 
 export const LOOKAHEAD_SEC = 0.12;
 export const TICK_MS = 25;
@@ -23,6 +23,7 @@ export function hitsInWindow(state, cycleStartSec, fromSec, toSec) {
     for (let cyc = firstCycle; cyc <= lastCycle; cyc++) {
       const base = cycleStartSec + cyc * cycleSec;
       for (let k = 0; k < layer.n; k++) {
+        if (isStepMuted(layer, k)) continue;
         const t = base + (k / layer.n) * cycleSec;
         if (t >= fromSec && t < toSec) {
           hits.push({ layerIndex: index, voiceIndex: index,
